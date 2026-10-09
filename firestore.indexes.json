@@ -1,0 +1,14 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "watchlist",
+      "queryScope": "COLLECTION",
+      "density": "DENSE",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "savedAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

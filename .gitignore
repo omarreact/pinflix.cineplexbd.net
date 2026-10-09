@@ -1,0 +1,14 @@
+node_modules/
+.next/
+.open-next/
+.wrangler/
+.env*
+!.env.example
+.dev.vars*
+!.dev.vars.example
+coverage/
+*.log
+*.tsbuildinfo
+work/
+test-results/
+.DS_Store

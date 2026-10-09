@@ -1,0 +1,44 @@
+{
+  "name": "pinflix",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build --webpack",
+    "build:pages": "next build --webpack",
+    "build:worker": "opennextjs-cloudflare build",
+    "start": "next start --hostname 127.0.0.1",
+    "preview": "opennextjs-cloudflare preview",
+    "preview:pages": "npx wrangler pages dev .next --compatibility-date=2026-10-10 --port 3000",
+    "deploy:pages": "npx wrangler pages deploy .next --project-name pinflix --branch main",
+    "deploy": "node scripts/check-deployment.mjs && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:smoke": "node scripts/verify-app.mjs",
+    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+  },
+  "dependencies": {
+    "@opennextjs/cloudflare": "1.20.10",
+    "firebase": "^13.0.0",
+    "lucide-react": "latest",
+    "next": "16.4.0",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "latest",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "jsdom": "^30.1.2",
+    "typescript": "latest",
+    "vitest": "latest",
+    "wrangler": "^4.148.0"
+  }
+}
