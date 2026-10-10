@@ -1,3 +1,5 @@
+import { mainProxyProtocol } from "@/lib/main-pinflix-url";
+
 const ALLOWED_HOSTS = new Set([
   "media.pincodeit.com",
   "youtube.com", "www.youtube.com", "youtu.be",
@@ -14,6 +16,7 @@ export type AllowedMediaSource = {
 };
 
 export function isAllowedMediaSource(url: string): boolean {
+  if (mainProxyProtocol(url)) return true;
   try {
     const parsed = new URL(url);
     if (parsed.username || parsed.password) return false;
@@ -33,6 +36,10 @@ export function isAllowedMediaSource(url: string): boolean {
 
 export function normalizeMediaSource(source: string): AllowedMediaSource | null {
   if (!source || !isAllowedMediaSource(source)) return null;
+  // Main PinFlix media is served from a safe, HTTPS, Range/HLS proxy.
+  // The format is embedded in its validated 'url' query parameter.
+  const mainProtocol = mainProxyProtocol(source);
+  if (mainProtocol) return { type: mainProtocol, url: source };
   const pathname = new URL(source).pathname.toLowerCase();
   if (pathname.endsWith(".m3u8")) return { type: "hls", url: source };
   if (pathname.endsWith(".mpd")) return { type: "dash", url: source };

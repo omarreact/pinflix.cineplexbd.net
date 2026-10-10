@@ -21,6 +21,30 @@ The UI and media backend are independent. An ordinary commit to this repository 
 
 **No Cloudflare API token is needed for GitHub CI or the Vercel UI deployment.**
 
+## Main PinFlix playback integration
+
+PinFlix 3.0 retains its TMDB-powered discovery UI and existing adaptive player.
+The `POST /api/playback/session` server route now **first** matches the selected
+movie or TV show by exact normalized title, media type and non-conflicting year
+against the **main** application's provider-only
+`https://pinflix.pincodeit.com/api/search/live`. It then requests that provider
+identifier from `https://pinflix.pincodeit.com/api/resolve`, preserving the
+original app's CDN/stream proxy, Range response and rewritten HLS segments.
+The browser never uses the provider's raw media URLs or an API key.
+
+Only strictly validated HTTPS `/api/proxy-stream` sources on the main PinFlix
+origin are accepted. Browser CSP permits that exact origin for media and
+connect operations. R2 session resolution remains a **secondary fallback**
+for already-published authorized media. No Cloudflare media Worker or backend
+repository is redeployed by this UI change.
+
+**Scope and limitations:** A TMDB title with no exact matching title in the
+main provider catalogue is not automatically playable, even when it appears in
+PinFlix 3.0's catalog. Source matching avoids wrong movies and TV series, and
+individual sources still require end-to-end playback verification on target
+devices. Main API downtime or upstream availability can affect playback. No
+provider credentials are copied into client code.
+
 ## Cloudflare media backend
 
 `pinflix-media-api` is a separate existing Worker that signs and serves authorized media from the private `pinflix-media` R2 bucket. It has independent settings, bindings, secrets and deployment lifecycle. Do not deploy the app's `wrangler.jsonc` to `pinflix-media-api`: that file targets the **`pinflix` frontend Worker**, not the media Worker.

@@ -41,7 +41,8 @@ export default async function TvShowPage({params,searchParams}:Props){
     {result.warning?<p className="notice" role="status">{result.warning}</p>:null}
     <section className="tv-seasons" aria-labelledby="tv-season-title">
       <div className="section-heading"><div><p className="eyebrow">EPISODE GUIDE</p><h2 id="tv-season-title">Seasons<span className="accent-dot">.</span></h2></div></div>
-      <TvEpisodeGuide showId={show.id} showTitle={show.title} seasons={show.seasons} />
+      <TvEpisodeGuide showId={show.id} showTitle={show.title}
+        showYear={Number(show.firstAirDate.slice(0, 4)) || undefined} seasons={show.seasons} />
     </section>
     <section className="tv-providers" aria-label="Viewing options">
       <h2>Where to watch</h2>
