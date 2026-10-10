@@ -28,7 +28,8 @@
     "lucide-react": "latest",
     "next": "16.4.0",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "hls.js": "1.6.15"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "latest",

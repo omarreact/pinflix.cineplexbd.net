@@ -1,15 +1,10 @@
 const ALLOWED_HOSTS = new Set([
-  "youtube.com",
-  "www.youtube.com",
-  "youtu.be",
-  "vimeo.com",
-  "player.vimeo.com",
-  "archive.org",
-  "www.archive.org",
-  "cdn.jsdelivr.net",
-  "images.ctfassets.net",
-  "image.tmdb.org",
-  "lh3.googleusercontent.com",
+  "media.pincodeit.com",
+  "youtube.com", "www.youtube.com", "youtu.be",
+  "vimeo.com", "player.vimeo.com",
+  "archive.org", "www.archive.org",
+  "cdn.jsdelivr.net", "images.ctfassets.net",
+  "image.tmdb.org", "lh3.googleusercontent.com",
   "storage.googleapis.com",
 ]);
 
@@ -21,19 +16,26 @@ export type AllowedMediaSource = {
 export function isAllowedMediaSource(url: string): boolean {
   try {
     const parsed = new URL(url);
-    if (!["http:", "https:"].includes(parsed.protocol)) return false;
-    if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") return true;
-    return ALLOWED_HOSTS.has(parsed.hostname) || parsed.hostname.endsWith(".youtube.com") || parsed.hostname.endsWith(".vimeo.com");
-  } catch {
-    return false;
-  }
+    if (parsed.username || parsed.password) return false;
+    const localDev = process.env.NODE_ENV === "development"
+      && ["localhost", "127.0.0.1"].includes(parsed.hostname);
+    if (parsed.protocol !== "https:" && !(localDev && parsed.protocol === "http:")) return false;
+    if (parsed.hostname === "media.pincodeit.com") {
+      return /^\/m\/media\/[a-zA-Z0-9_.\/-]+$/.test(parsed.pathname)
+        && !parsed.pathname.includes("..")
+        && !!parsed.searchParams.get("exp")
+        && !!parsed.searchParams.get("sig");
+    }
+    return localDev || ALLOWED_HOSTS.has(parsed.hostname) ||
+      parsed.hostname.endsWith(".youtube.com") || parsed.hostname.endsWith(".vimeo.com");
+  } catch { return false; }
 }
 
 export function normalizeMediaSource(source: string): AllowedMediaSource | null {
   if (!source || !isAllowedMediaSource(source)) return null;
-  const lower = source.toLowerCase();
-  if (lower.includes(".m3u8") || lower.includes("hls")) return { type: "hls", url: source };
-  if (lower.includes(".mpd") || lower.includes("dash")) return { type: "dash", url: source };
-  if (lower.includes(".mp4") || lower.includes("video/mp4")) return { type: "mp4", url: source };
+  const pathname = new URL(source).pathname.toLowerCase();
+  if (pathname.endsWith(".m3u8")) return { type: "hls", url: source };
+  if (pathname.endsWith(".mpd")) return { type: "dash", url: source };
+  if (pathname.endsWith(".mp4")) return { type: "mp4", url: source };
   return { type: "embed", url: source };
 }

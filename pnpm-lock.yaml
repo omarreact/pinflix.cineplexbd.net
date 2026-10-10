@@ -11,6 +11,9 @@ importers:
       '@opennextjs/cloudflare':
         specifier: 1.20.10
         version: 1.20.10(next@16.4.0(@types/node@26.6.4)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(supports-color@10.2.2)(wrangler@4.148.0(@cloudflare/workers-types@5.20261008.1)(@types/node@26.6.4))
+      hls.js:
+        specifier: 1.6.15
+        version: 1.6.15
       firebase:
         specifier: ^13.0.0
         version: 13.0.0
@@ -56,6 +59,9 @@ importers:
         version: 4.148.0(@cloudflare/workers-types@5.20261008.1)(@types/node@26.6.4)
 
 packages:
+
+  hls.js@1.6.15:
+    resolution: {integrity: sha512-E3a5VwgXimGHwpRGV+WxRTKeSp2DW5DI5MWv34ulL3t5UNmyJWCQ1KmLEHbYzcfThfXG8amBL+fCYPneGHC4VA==}
 
   '@asamuzakjp/css-color@7.1.4':
     resolution: {integrity: sha512-KdNhWlAh2sbYB8Of0Yw84/a+LO/vsBOHJcIg8BpyXo2RGrFWVJvEMRviMON+ysQu0KpV7wxrWrq9jaX0P21GzA==}
@@ -3200,6 +3206,8 @@ packages:
     resolution: {integrity: sha512-rLfVLB4FgQneDr0dv1oddCVZmKjcJ6yX6mS4pU82Mq/Dt9a3cLZQ62pDBL4AUO+uVrCvtWz3ZFUL2HFAFJ/BXQ==}
 
 snapshots:
+
+  hls.js@1.6.15: {}
 
   '@asamuzakjp/css-color@7.1.4':
     dependencies:

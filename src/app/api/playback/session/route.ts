@@ -18,7 +18,7 @@ function getEdgeBaseUrl() {
   const raw = process.env.PLAYBACK_EDGE_BASE_URL || DEFAULT_EDGE_BASE_URL;
   try {
     const url = new URL(raw);
-    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) return null;
     return url;
   } catch {
     return null;
@@ -29,13 +29,16 @@ function cleanTitle(value: unknown) {
   return typeof value === "string" ? value.trim().slice(0, 180) : "";
 }
 
-function isPlaybackSource(value: unknown): value is PlaybackSource {
+function isPlaybackSource(value: unknown, edgeOrigin: string): value is PlaybackSource {
   if (!value || typeof value !== "object") return false;
   const source = value as Record<string, unknown>;
   if (typeof source.label !== "string" || typeof source.url !== "string") return false;
   try {
     const url = new URL(source.url);
-    return url.protocol === "https:" || url.protocol === "http:";
+    return url.protocol === "https:" && url.origin === edgeOrigin &&
+      /^\/m\/media\/[A-Za-z0-9_./-]+\.(m3u8|mp4)$/i.test(url.pathname) &&
+      !url.pathname.includes("..") && /^\d{10,11}$/.test(url.searchParams.get("exp") || "") &&
+      /^[0-9a-f]{64}$/.test(url.searchParams.get("sig") || "");
   } catch {
     return false;
   }
@@ -73,6 +76,7 @@ export async function POST(request: Request) {
       method: "GET",
       headers: { Accept: "application/json" },
       cache: "no-store",
+      signal: AbortSignal.timeout(8000),
     });
   } catch {
     return NextResponse.json({
@@ -100,7 +104,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: "unavailable", message, key, title }, { status: response.status });
   }
 
-  const sources = Array.isArray(data.sources) ? data.sources.filter(isPlaybackSource).slice(0, 8) : [];
+  const sources = Array.isArray(data.sources) ? data.sources.filter(item => isPlaybackSource(item, edgeBase.origin)).slice(0, 8) : [];
 
   if (sources.length === 0) {
     return NextResponse.json({
