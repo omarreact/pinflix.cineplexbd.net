@@ -1,7 +1,7 @@
 "use client";
 
 import { Film, Play, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AdaptivePlayer } from "@/components/adaptive-player";
 
 type PlaybackSource = { label: string; url: string };
@@ -11,7 +11,13 @@ type PlaybackSession = {
   sources?: PlaybackSource[];
 };
 
-export function PlaybackPanel({ movieId, title }: { movieId: number; title: string }) {
+type PlaybackPanelProps =
+  | { movieId: number; title: string; tvId?: never; season?: never; episode?: never; autoStart?: boolean }
+  | { tvId: number; season: number; episode: number; title: string; movieId?: never; autoStart?: boolean };
+
+export function PlaybackPanel(props: PlaybackPanelProps) {
+  const { title, autoStart = false } = props;
+  const started = useRef(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +38,9 @@ export function PlaybackPanel({ movieId, title }: { movieId: number; title: stri
       const response = await fetch("/api/playback/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ movieId, title }),
+        body: JSON.stringify(typeof props.tvId === "number"
+          ? { kind: "tv", tvId: props.tvId, season: props.season, episode: props.episode, title }
+          : { kind: "movie", movieId: props.movieId, title }),
         cache: "no-store",
       });
       const data = await response.json() as PlaybackSession;
@@ -47,9 +55,17 @@ export function PlaybackPanel({ movieId, title }: { movieId: number; title: stri
     }
   };
 
+  useEffect(() => {
+    if (!autoStart || started.current) return;
+    started.current = true;
+    void startPlayback();
+    // Autostart requests a signed CDN session, not video autoplay.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart]);
+
   return <>
     <button className="button button-primary" onClick={() => void startPlayback()} disabled={loading}>
-      <Play size={18} fill="currentColor" /> {loading ? "Preparing video…" : "Watch now"}
+      <Play size={18} fill="currentColor" /> {loading ? "Preparing video…" : typeof props.tvId === "number" ? "Watch episode" : "Watch now"}
     </button>
     {open ? <section aria-label="Pinflix playback panel" style={{
       marginTop: 20, border: "1px solid var(--media-border)",
@@ -68,6 +84,7 @@ export function PlaybackPanel({ movieId, title }: { movieId: number; title: stri
       </div> : null}
       {!loading && !error && activeSource ? <>
         <AdaptivePlayer key={activeSource.url} source={activeSource.url} title={title} />
+        <p style={{ marginTop: 10, fontSize: 11, color: "var(--muted)" }}>Delivered securely via Cloudflare R2</p>
         {sources.length > 1 ? <div aria-label="Playback sources" style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
           {sources.map(source => <button type="button" key={source.url}
             className={`genre-chip ${source.url === activeSource.url ? "active" : ""}`}

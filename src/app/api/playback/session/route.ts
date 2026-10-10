@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import { checkApiRateLimit } from "@/lib/api-rate-limit";
 import { isSameOriginMutation, readBoundedJsonObject } from "@/lib/request-security";
+import { isSignedR2Source, parseR2Selection, r2CatalogueKey } from "@/lib/r2-playback";
 
 export const dynamic = "force-dynamic";
-
-type PlaybackSource = {
-  label: string;
-  url: string;
-};
 
 type EdgeResolveResponse = {
   sources?: unknown;
@@ -31,21 +27,6 @@ function cleanTitle(value: unknown) {
   return typeof value === "string" ? value.trim().slice(0, 180) : "";
 }
 
-function isPlaybackSource(value: unknown, edgeOrigin: string): value is PlaybackSource {
-  if (!value || typeof value !== "object") return false;
-  const source = value as Record<string, unknown>;
-  if (typeof source.label !== "string" || typeof source.url !== "string") return false;
-  try {
-    const url = new URL(source.url);
-    return url.protocol === "https:" && url.origin === edgeOrigin &&
-      /^\/m\/media\/[A-Za-z0-9_./-]+\.(m3u8|mp4)$/i.test(url.pathname) &&
-      !url.pathname.includes("..") && /^\d{10,11}$/.test(url.searchParams.get("exp") || "") &&
-      /^[0-9a-f]{64}$/.test(url.searchParams.get("sig") || "");
-  } catch {
-    return false;
-  }
-}
-
 export async function POST(request: Request) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ status: "error", message: "Request origin not allowed." }, { status: 403, headers: { "Cache-Control": "no-store" } });
@@ -64,14 +45,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: "unavailable", message: "Playback edge is not configured." }, { status: 503 });
   }
 
-  const movieId = Number(payload.movieId);
+  const selection = parseR2Selection(payload);
   const title = cleanTitle(payload.title);
-
-  if (!Number.isSafeInteger(movieId) || movieId <= 0) {
-    return NextResponse.json({ status: "error", message: "Invalid movie selection." }, { status: 400 });
+  if (!selection) {
+    return NextResponse.json({ status: "error", message: "Invalid video selection." }, { status: 400, headers: { "Cache-Control": "no-store" } });
   }
-
-  const key = `movie:${movieId}`;
+  const key = r2CatalogueKey(selection);
   const resolveUrl = new URL("/public-resolve", edgeBase);
   resolveUrl.searchParams.set("key", key);
 
@@ -105,11 +84,11 @@ export async function POST(request: Request) {
   }
 
   if (!response.ok) {
-    const message = typeof data.error === "string" ? data.error : "Playback edge rejected this request.";
+    const message = response.status === 404 ? "Video not available." : "The video CDN is temporarily unavailable.";
     return NextResponse.json({ status: "unavailable", message, key, title }, { status: response.status });
   }
 
-  const sources = Array.isArray(data.sources) ? data.sources.filter(item => isPlaybackSource(item, edgeBase.origin)).slice(0, 8) : [];
+  const sources = Array.isArray(data.sources) ? data.sources.filter(item => isSignedR2Source(item, edgeBase.origin)).slice(0, 8) : [];
 
   if (sources.length === 0) {
     return NextResponse.json({
@@ -124,7 +103,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     status: "ready",
     key,
-    movieId,
+    ...selection,
     title,
     edge: edgeBase.origin,
     sources,
