@@ -76,24 +76,31 @@ function WatchlistProvider({ children }: { children: ReactNode }) {
   accountRef.current = accountState;
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      getFirebaseAuth(),
-      (nextUser) => {
-        setUser(nextUser);
-        setAuthError(null);
-        setConfigReady(true);
-      },
-      (error) => {
-        setUser(null);
-        setAuthError(
-          error instanceof FirebaseError
-            ? "Firebase Authentication could not be initialized. Check the project’s Auth settings."
-            : "Firebase Authentication could not be initialized.",
-        );
-        setConfigReady(true);
-      },
-    );
-    return unsubscribe;
+    try {
+      const unsubscribe = onAuthStateChanged(
+        getFirebaseAuth(),
+        (nextUser) => {
+          setUser(nextUser);
+          setAuthError(null);
+          setConfigReady(true);
+        },
+        (error) => {
+          setUser(null);
+          setAuthError(
+            error instanceof FirebaseError
+              ? "Firebase Authentication is temporarily unavailable."
+              : "Sign-in is temporarily unavailable.",
+          );
+          setConfigReady(true);
+        },
+      );
+      return unsubscribe;
+    } catch {
+      // Authentication must never prevent the public catalogue from rendering.
+      setUser(null);
+      setAuthError("Sign-in is temporarily unavailable.");
+      setConfigReady(true);
+    }
   }, []);
 
   useEffect(() => {
