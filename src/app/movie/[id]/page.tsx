@@ -21,7 +21,8 @@ export default async function MoviePage({ params, searchParams }: Props) {
   return <>
     <MovieDetailView initial={initial} initialRegion={region} />
     <section className="container" style={{ marginTop: "24px", marginBottom: "74px" }} aria-label="Playback">
-      <PlaybackPanel movieId={initial.movie.id} title={initial.movie.title} />
+      <PlaybackPanel movieId={initial.movie.id} title={initial.movie.title}
+        year={Number(initial.movie.releaseDate.slice(0, 4)) || undefined} />
     </section>
   </>;
 }

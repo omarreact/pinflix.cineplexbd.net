@@ -5,10 +5,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdaptivePlayer } from "@/components/adaptive-player";
 
 type PlaybackSource = { label: string; url: string };
-type PlaybackSession = { status: "ready" | "unavailable" | "error"; message?: string; sources?: PlaybackSource[] };
+type PlaybackSession = {
+  status: "ready" | "unavailable" | "error";
+  message?: string;
+  delivery?: "main-pinflix" | "r2";
+  sources?: PlaybackSource[];
+};
 type PlaybackPanelProps =
-  | { movieId: number; title: string; tvId?: never; season?: never; episode?: never; autoStart?: boolean }
-  | { tvId: number; season: number; episode: number; title: string; movieId?: never; autoStart?: boolean };
+  | { movieId: number; title: string; year?: number; tvId?: never; season?: never; episode?: never; autoStart?: boolean }
+  | { tvId: number; season: number; episode: number; title: string; year?: number; movieId?: never; autoStart?: boolean };
 
 export function PlaybackPanel(props: PlaybackPanelProps) {
   const { title, autoStart = false } = props;
@@ -16,6 +21,7 @@ export function PlaybackPanel(props: PlaybackPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sources, setSources] = useState<PlaybackSource[]>([]);
+  const [delivery, setDelivery] = useState<"main-pinflix" | "r2">("r2");
   const [activeUrl, setActiveUrl] = useState<string | null>(null);
   const [switchNotice, setSwitchNotice] = useState<string | null>(null);
   const requestRef = useRef<AbortController | null>(null);
@@ -42,8 +48,8 @@ export function PlaybackPanel(props: PlaybackPanelProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(typeof props.tvId === "number"
-          ? { kind: "tv", tvId: props.tvId, season: props.season, episode: props.episode, title }
-          : { kind: "movie", movieId: props.movieId, title }),
+          ? { kind: "tv", tvId: props.tvId, season: props.season, episode: props.episode, title, year: props.year }
+          : { kind: "movie", movieId: props.movieId, title, year: props.year }),
         cache: "no-store",
         signal: controller.signal,
       });
@@ -53,6 +59,7 @@ export function PlaybackPanel(props: PlaybackPanelProps) {
       }
       if (controller.signal.aborted) return;
       setSources(data.sources);
+      setDelivery(data.delivery === "main-pinflix" ? "main-pinflix" : "r2");
       setActiveUrl(data.sources[0].url);
     } catch (reason) {
       if (controller.signal.aborted) return;
@@ -124,7 +131,9 @@ export function PlaybackPanel(props: PlaybackPanelProps) {
         <AdaptivePlayer key={activeSource.url} source={activeSource.url}
           title={title} onFatalError={onFatalError}/>
         {switchNotice ? <p className="notice" role="status">{switchNotice}</p> : null}
-        <p style={{ marginTop: 10, fontSize: 11, color: "var(--muted)" }}>Delivered via Cloudflare R2</p>
+        <p style={{ marginTop: 10, fontSize: 11, color: "var(--muted)" }}>
+          {delivery === "main-pinflix" ? "Playback via main PinFlix CDN" : "Delivered via Cloudflare R2"}
+        </p>
         {sources.length > 1 ? <div aria-label="Playback sources" style={{
           display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap",
         }}>

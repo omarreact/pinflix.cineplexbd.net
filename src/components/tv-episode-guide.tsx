@@ -7,8 +7,8 @@ import { PlaybackPanel } from "@/components/playback-panel";
 
 type ActiveEpisode = { season: number; number: number; title: string };
 
-export function TvEpisodeGuide({ showId, showTitle, seasons }: {
-  showId: number; showTitle: string; seasons: TvSeason[];
+export function TvEpisodeGuide({ showId, showTitle, showYear, seasons }: {
+  showId: number; showTitle: string; showYear?: number; seasons: TvSeason[];
 }) {
   const playableSeasons = seasons.filter(item => Number.isInteger(item.number) && item.number > 0 && item.number <= 999);
   const [selectedSeason, setSelectedSeason] = useState<number>(playableSeasons[0]?.number ?? 1);
@@ -66,7 +66,7 @@ export function TvEpisodeGuide({ showId, showTitle, seasons }: {
             <ChevronDown size={21} /></button>
         </div>
         <PlaybackPanel key={`${showId}:${active.season}:${active.number}`}
-          tvId={showId} season={active.season} episode={active.number}
+          tvId={showId} season={active.season} episode={active.number} year={showYear}
           title={`${showTitle} · S${active.season}E${active.number}`} autoStart />
       </div> : null}
     </div>;
@@ -111,7 +111,7 @@ export function TvEpisodeGuide({ showId, showTitle, seasons }: {
         <button type="button" className="icon-button" onClick={() => setActive(null)} aria-label="Close episode player"><ChevronDown size={21} /></button>
       </div>
       <PlaybackPanel key={`${showId}:${active.season}:${active.number}`}
-        tvId={showId} season={active.season} episode={active.number}
+        tvId={showId} season={active.season} episode={active.number} year={showYear}
         title={`${showTitle} · S${active.season}E${active.number}`} autoStart />
     </div> : null}
   </div>;
