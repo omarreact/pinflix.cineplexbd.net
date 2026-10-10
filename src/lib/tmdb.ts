@@ -7,7 +7,7 @@ import type { CatalogueOptions, CatalogueResult, MovieResult } from "./types";
 
 class TMDBError extends Error { constructor(public status: number) { super(`TMDB returned status ${status}`); } }
 
-async function tmdbRequest(path: string, params: Record<string, string>, env: Partial<CloudflareEnv>): Promise<unknown> {
+export async function tmdbRequest(path: string, params: Record<string, string>, env: Partial<CloudflareEnv>): Promise<unknown> {
   const url = new URL(`https://api.themoviedb.org/3${path}`);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
   const cacheKey = `tmdb:v1:${url.pathname}:${url.searchParams.toString()}`;
