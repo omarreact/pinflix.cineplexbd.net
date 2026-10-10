@@ -1,4 +1,4 @@
-name: Deploy Pinflix to Cloudflare Workers
+name: Build and Deploy Pinflix to Cloudflare Workers
 on:
   workflow_dispatch:
   push:
@@ -15,9 +15,13 @@ on:
 permissions:
   contents: read
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+      # The account ID is a public identifier, not an API credential.
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID || '815dd6892edc628128dc65a992086cf9' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -29,7 +33,21 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: node scripts/check-deployment.mjs
-      - run: pnpm deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+      # Always verify the Cloudflare build, even when publishing isn't configured.
+      - name: Build Worker bundle
+        run: pnpm build:worker
+      - name: Publish Worker
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' }}
+        run: pnpm exec opennextjs-cloudflare deploy
+      - name: Explain skipped Cloudflare publish
+        if: ${{ env.CLOUDFLARE_API_TOKEN == '' }}
+        run: |
+          echo "::warning title=Cloudflare publish skipped::CLOUDFLARE_API_TOKEN is not configured in GitHub Actions production environment or repository secrets. Build checks passed; no Worker was published."
+          {
+            echo "### Cloudflare publish skipped (credentials required)"
+            echo "Build and tests ran, but **no Cloudflare Worker was deployed**."
+            echo ""
+            echo "Add \`CLOUDFLARE_API_TOKEN\` as a GitHub Actions secret for this repository or its \`production\` environment."
+            echo "Then rerun this workflow. The Cloudflare account ID is already configured via a non-secret fallback."
+            echo "Vercel deployments are separate and are not changed by this workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
