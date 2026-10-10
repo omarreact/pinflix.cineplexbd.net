@@ -6,8 +6,8 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "pinflix" }],
-  "vars": { "NEXT_PUBLIC_SITE_URL": "http://localhost:3000", "DEFAULT_WATCH_REGION": "BD" },
-  "kv_namespaces": [{ "binding": "MOVIE_CACHE", "id": "00000000000000000000000000000000" }],
+  "vars": { "NEXT_PUBLIC_SITE_URL": "https://pinflix-new.pincodeit.com", "DEFAULT_WATCH_REGION": "BD" },
+  "kv_namespaces": [{ "binding": "MOVIE_CACHE", "id": "415fd5a7e9a6459199ba450e8439cca6" }],
   "ratelimits": [{ "name": "API_RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } }],
   "observability": { "enabled": true, "head_sampling_rate": 0.1 }
 }
