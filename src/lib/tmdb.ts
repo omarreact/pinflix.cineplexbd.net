@@ -12,7 +12,7 @@ async function tmdbRequest(path: string, params: Record<string, string>, env: Pa
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
   const cacheKey = `tmdb:v1:${url.pathname}:${url.searchParams.toString()}`;
   if (env.MOVIE_CACHE) {
-    try { const cached = await env.MOVIE_CACHE.get<unknown>(cacheKey, "json"); if (cached !== null) return cached; }
+    try { const cached = await env.MOVIE_CACHE.get(cacheKey, "json"); if (cached !== null) return cached as unknown; }
     catch { /* Cache failures must not disable catalogue reads. */ }
   }
   const headers: Record<string, string> = { Accept: "application/json" };
