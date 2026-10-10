@@ -3,7 +3,7 @@ import {notFound} from "next/navigation";
 import Link from "next/link";
 import {ArrowLeft,ArrowUpRight,CalendarDays,Play,Star,Film} from "lucide-react";
 import {getTvDetail} from "@/lib/tv";
-import {posterUrl} from "@/components/movie-card";
+import {posterUrl} from "@/lib/poster-url";
 type Props={params:Promise<{id:string}>;searchParams:Promise<{region?:string}>};
 export async function generateMetadata({params}:Props):Promise<Metadata>{
   const {id}=await params;
@@ -43,8 +43,8 @@ export default async function TvShowPage({params,searchParams}:Props){
       {show.seasons.length?<div className="tv-season-list">
         {show.seasons.map(season=><details className="tv-season" key={season.number}>
           <summary><span>{season.title||("Season "+season.number)}</span><span>{season.episodeCount} episodes · {season.airDate||"Date TBA"}</span></summary>
-          <p>{season.episodeCount} episodes listed in TMDB metadata. Episode playback requires an authorized source.</p>
-        </details>)}</div>:<p className="notice">Season information is not available in this preview. Connect live TV metadata to see the guide.</p>}
+          <p>{season.episodeCount} episodes listed in TMDB metadata. Check your provider for episode availability.</p>
+        </details>)}</div>:<p className="notice">Season information is currently unavailable for this title.</p>}
     </section>
     <section className="tv-providers" aria-label="Viewing options">
       <h2>Where to watch</h2>
@@ -52,7 +52,7 @@ export default async function TvShowPage({params,searchParams}:Props){
         <a className="text-link" href={show.providerLink} target="_blank" rel="noopener noreferrer">
           Check current availability <ArrowUpRight size={16}/></a></>
         :<p>Streaming availability has not been verified for this show.</p>}
-      <p className="tv-attribution">TV data via TMDB; providers via TMDB / JustWatch. Pinflix does not assume streaming rights.</p>
+      <p className="tv-attribution">TV data via TMDB; providers via TMDB / JustWatch. Provider availability can vary by region.</p>
     </section>
   </article>;
 }

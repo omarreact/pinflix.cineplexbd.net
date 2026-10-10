@@ -68,7 +68,7 @@ const DEMO_TV: TvShow[] = [
   [1429, "Attack on Titan", "2013-04-07", ["Animation", "Action & Adventure"]],
 ].map(([id, title, firstAirDate, genres]) => ({
   id: id as number, title: title as string, firstAirDate: firstAirDate as string,
-  genres: genres as string[], overview: "Preview listing — connect TMDB for the latest series information.",
+  genres: genres as string[], overview: "This series is included in our preview selection.",
   rating: 0, posterPath: null, backdropPath: null, language: "",
   numberOfSeasons: null, numberOfEpisodes: null,
 }));
@@ -131,7 +131,7 @@ export async function getTvCatalogue(options: CatalogueOptions = {}): Promise<Tv
       page:number(raw.page,opts.page),totalPages:Math.max(1,Math.min(500,number(raw.total_pages,1))),
       totalResults:number(raw.total_results),source:"tmdb"};
   } catch {
-    return {...filterDemo(opts),warning:"Live TV discovery is temporarily unavailable. Showing preview listings."};
+    return {...filterDemo(opts),warning:"We couldn't refresh the TV collection. Showing preview titles."};
   }
 }
 
@@ -163,6 +163,6 @@ export async function getTvDetail(id:number, region = "BD"):Promise<TvDetailResu
       providers:[...new Set(providers)],providerLink:safeProviderLink(providerRegion.link)},source:"tmdb"};
   } catch {
     return {show:preview?previewDetail(preview):null,source:"demo",
-      warning:"Live show details are unavailable. Preview information is shown when available."};
+      warning:"Show details are temporarily unavailable. Preview information is shown when available."};
   }
 }

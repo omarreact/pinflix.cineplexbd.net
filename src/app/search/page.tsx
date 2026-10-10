@@ -2,7 +2,7 @@ import type {Metadata} from "next";
 import Link from "next/link";
 import {Search,ArrowUpRight,Star,Film} from "lucide-react";
 import {searchDiscovery,normalizeKind} from "@/lib/discovery";
-import {posterUrl} from "@/components/movie-card";
+import {posterUrl} from "@/lib/poster-url";
 export const metadata:Metadata={title:"Search movies and TV",description:"Search Pinflix for movies and television shows."};
 type Props={searchParams:Promise<Record<string,string|string[]|undefined>>};
 export default async function SearchPage({searchParams}:Props){

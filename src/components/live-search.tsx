@@ -91,7 +91,7 @@ export function LiveSearch({onNavigate}: {onNavigate?:()=>void}){
             <span><strong>{hit.title}</strong><small>{hit.kind==="tv"?"TV Show":"Movie"} {hit.date?"· "+hit.date.slice(0,4):""}</small></span>
             <ArrowRight size={17}/>
           </Link>)}
-          {data?.source==="demo"&&query.trim().length>=2?<p className="live-search-footnote">Preview results · Live catalogue requires TMDB configuration</p>:null}
+          {data?.source==="demo"&&query.trim().length>=2?<p className="live-search-footnote">Preview collection · Viewing availability not yet verified</p>:null}
         </div>
         {query.trim().length>=2?<Link className="live-search-all" href={searchUrl} onClick={close}>View search results <ArrowRight size={17}/></Link>:null}
       </section>
