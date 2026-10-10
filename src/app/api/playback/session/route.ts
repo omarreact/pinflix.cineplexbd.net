@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { checkApiRateLimit } from "@/lib/api-rate-limit";
+import { isSameOriginMutation, readBoundedJsonObject } from "@/lib/request-security";
 
 export const dynamic = "force-dynamic";
 
@@ -44,21 +46,24 @@ function isPlaybackSource(value: unknown, edgeOrigin: string): value is Playback
   }
 }
 
-async function readPayload(request: Request) {
-  try {
-    return await request.json() as Record<string, unknown>;
-  } catch {
-    return {} as Record<string, unknown>;
-  }
-}
-
 export async function POST(request: Request) {
+  if (!isSameOriginMutation(request)) {
+    return NextResponse.json({ status: "error", message: "Request origin not allowed." }, { status: 403, headers: { "Cache-Control": "no-store" } });
+  }
+  if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+    return NextResponse.json({ status: "error", message: "JSON request required." }, { status: 415, headers: { "Cache-Control": "no-store" } });
+  }
+  const limited = await checkApiRateLimit(request);
+  if (limited) return limited;
+  const payload = await readBoundedJsonObject(request);
+  if (!payload) {
+    return NextResponse.json({ status: "error", message: "Invalid request body." }, { status: 400, headers: { "Cache-Control": "no-store" } });
+  }
   const edgeBase = getEdgeBaseUrl();
   if (!edgeBase) {
     return NextResponse.json({ status: "unavailable", message: "Playback edge is not configured." }, { status: 503 });
   }
 
-  const payload = await readPayload(request);
   const movieId = Number(payload.movieId);
   const title = cleanTitle(payload.title);
 
