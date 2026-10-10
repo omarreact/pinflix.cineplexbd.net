@@ -46,3 +46,18 @@
 .live-search-all:hover{background:rgba(255,255,255,.04)}.live-search-footnote{font-size:10px;color:var(--muted);padding:10px 12px}
 @media(max-width:800px){.tv-detail-layout{grid-template-columns:1fr}.tv-detail-poster{max-width:300px}.tv-detail-info h1{font-size:clamp(3rem,12vw,5rem)}.tv-season summary{align-items:flex-start;flex-direction:column;gap:6px}
 .search-page-form{flex-direction:column}.search-page-form .search-form{width:100%;flex:auto}.live-search-overlay{padding-top:72px}.live-search-dialog{max-height:80vh}}
+
+/* Episode playback uses existing PinFlix media-aware theme variables. */
+.episode-season-picker{display:flex;gap:9px;flex-wrap:wrap;margin:25px 0 18px}
+.episode-count{color:var(--muted);font-size:12px;margin:12px 0 16px}
+.episode-list{border-top:1px solid var(--media-border)}
+.episode-row{display:flex;align-items:flex-start;gap:18px;padding:18px 8px;border-bottom:1px solid var(--media-border)}
+.episode-index{color:var(--media-accent);font-size:17px;font-weight:600;min-width:34px}
+.episode-summary{min-width:0;flex:1}.episode-summary h3{font-weight:600;letter-spacing:-.02em;font-size:17px}
+.episode-summary .episode-secondary{font-size:11px;color:var(--muted);margin-top:5px}
+.episode-overview{color:var(--muted);font-size:13px;margin-top:7px;max-width:760px;line-height:1.7}
+.episode-watch{flex:none;margin-top:3px;min-height:38px;padding:8px 15px}
+.episode-playback{border:1px solid var(--media-border);border-radius:13px;background:var(--media-bg-soft);padding:16px;margin-top:25px}
+.episode-playback-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;font-weight:600}
+.episode-playback-heading>span{display:flex;align-items:center;gap:9px}.episode-playback-heading svg{color:var(--media-accent)}
+@media(max-width:680px){.episode-row{flex-wrap:wrap;gap:12px}.episode-summary{flex-basis:calc(100% - 56px)}.episode-watch{margin-left:45px}.episode-playback{padding:12px}}

@@ -3,6 +3,7 @@ import {notFound} from "next/navigation";
 import Link from "next/link";
 import {ArrowLeft,ArrowUpRight,CalendarDays,Play,Star,Film} from "lucide-react";
 import {getTvDetail} from "@/lib/tv";
+import {TvEpisodeGuide} from "@/components/tv-episode-guide";
 import {posterUrl} from "@/lib/poster-url";
 type Props={params:Promise<{id:string}>;searchParams:Promise<{region?:string}>};
 export async function generateMetadata({params}:Props):Promise<Metadata>{
@@ -40,11 +41,7 @@ export default async function TvShowPage({params,searchParams}:Props){
     {result.warning?<p className="notice" role="status">{result.warning}</p>:null}
     <section className="tv-seasons" aria-labelledby="tv-season-title">
       <div className="section-heading"><div><p className="eyebrow">EPISODE GUIDE</p><h2 id="tv-season-title">Seasons<span className="accent-dot">.</span></h2></div></div>
-      {show.seasons.length?<div className="tv-season-list">
-        {show.seasons.map(season=><details className="tv-season" key={season.number}>
-          <summary><span>{season.title||("Season "+season.number)}</span><span>{season.episodeCount} episodes · {season.airDate||"Date TBA"}</span></summary>
-          <p>{season.episodeCount} episodes listed in TMDB metadata. Check your provider for episode availability.</p>
-        </details>)}</div>:<p className="notice">Season information is currently unavailable for this title.</p>}
+      <TvEpisodeGuide showId={show.id} showTitle={show.title} seasons={show.seasons} />
     </section>
     <section className="tv-providers" aria-label="Viewing options">
       <h2>Where to watch</h2>

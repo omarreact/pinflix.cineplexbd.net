@@ -166,3 +166,46 @@ export async function getTvDetail(id:number, region = "BD"):Promise<TvDetailResu
       warning:"Show details are temporarily unavailable. Preview information is shown when available."};
   }
 }
+
+/** Episode metadata is informational. Actual playback is R2 catalogue-gated. */
+export interface TvEpisode {
+  number: number;
+  name: string;
+  overview: string;
+  airDate: string;
+  runtime: number | null;
+  stillPath: string | null;
+}
+export interface TvSeasonResult {
+  episodes: TvEpisode[];
+  source: "tmdb" | "demo";
+  warning?: string;
+}
+
+export async function getTvSeasonEpisodes(id: number, season: number): Promise<TvSeasonResult> {
+  if (!Number.isInteger(id) || id < 1 || id > 2_147_483_647 ||
+      !Number.isInteger(season) || season < 1 || season > 999) {
+    return { episodes: [], source: "demo" };
+  }
+  const env = await getRuntimeEnv();
+  if (!env.TMDB_READ_TOKEN && !env.TMDB_API_KEY) return { episodes: [], source: "demo" };
+  try {
+    const raw = object(await tmdbRequest(`/tv/${id}/season/${season}`, { language: "en-US" }, env));
+    const episodes = list(raw.episodes).map(item => {
+      const episode = object(item);
+      const numberValue = number(episode.episode_number);
+      if (!Number.isInteger(numberValue) || numberValue < 1 || numberValue > 999) return null;
+      return {
+        number: numberValue,
+        name: text(episode.name).slice(0, 200) || `Episode ${numberValue}`,
+        overview: text(episode.overview).slice(0, 900),
+        airDate: text(episode.air_date),
+        runtime: number(episode.runtime) > 0 ? number(episode.runtime) : null,
+        stillPath: safeImagePath(episode.still_path),
+      } satisfies TvEpisode;
+    }).filter((episode): episode is TvEpisode => episode !== null);
+    return { episodes, source: "tmdb" };
+  } catch {
+    return { episodes: [], source: "demo", warning: "Episode information is temporarily unavailable." };
+  }
+}
