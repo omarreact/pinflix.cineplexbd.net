@@ -15,9 +15,9 @@ const html = String.raw`<!doctype html>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pinflix — Find your next great film</title>
-  <meta name="description" content="Pinflix is a cinematic movie discovery interface for browsing films, trailers, watch providers, and watchlist ideas." />
+  <meta name="description" content="Pinflix is a cinematic movie discovery experience for browsing films, trailers, watch providers, and watchlist ideas." />
   <meta property="og:title" content="Pinflix — Find your next great film" />
-  <meta property="og:description" content="A media-aware movie discovery interface by Pincode IT." />
+  <meta property="og:description" content="A media-aware movie discovery experience by Pincode IT." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="${siteUrl}" />
   <style>
@@ -71,7 +71,6 @@ const html = String.raw`<!doctype html>
     .movie > * { position: relative; }
     .movie h3 { margin: 0 0 8px; font-size: 1.35rem; }
     .movie p { color: rgba(255,255,255,.78); margin: 0; line-height: 1.55; }
-    .notice { margin: 42px 0 28px; padding: 22px; border-radius: 26px; background: rgba(213,236,127,.1); border: 1px solid rgba(213,236,127,.35); color: #e9f8b7; }
     footer { border-top: 1px solid var(--line); color: var(--muted); padding: 26px 0 34px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
     @media (max-width: 860px) { nav { display: none; } .hero { grid-template-columns: 1fr; padding-top: 26px; } .poster-stage { min-height: 380px; } .grid { grid-template-columns: 1fr; } footer { display: block; } }
   </style>
@@ -80,35 +79,37 @@ const html = String.raw`<!doctype html>
   <div class="shell">
     <header>
       <a class="brand" href="/"><span class="logo">▶</span><span>Pinflix</span></a>
-      <nav aria-label="Main navigation"><a href="#collection">Collection</a><a href="#status">Status</a><a href="https://github.com/omarreact/pinflix.cineplexbd.net">GitHub</a></nav>
+      <nav aria-label="Main navigation"><a href="#collection">Collection</a><a href="#watchlist">Watchlist</a></nav>
     </header>
 
     <main>
       <section class="hero">
         <div>
-          <p class="eyebrow">Cloudflare Pages preview</p>
+          <p class="eyebrow">Curated for film lovers</p>
           <h1>Your next<br><em>great film.</em></h1>
-          <p class="lede">Pinflix is online again with a lightweight Pages build while the full OpenNext Worker deployment is prepared. This page confirms the production domain is no longer blank.</p>
-          <div class="actions"><a class="button primary" href="#collection">Explore the preview</a><a class="button secondary" href="https://pinflix-new.pincodeit.com">Custom domain</a></div>
+          <p class="lede">Discover cinematic worlds, explore mood-led collections, and keep the stories you want to watch close at hand.</p>
+          <div class="actions"><a class="button primary" href="#collection">Explore films</a><a class="button secondary" href="#watchlist">Build your watchlist</a></div>
         </div>
-        <div class="poster-stage" aria-label="Abstract cinematic poster"><div class="sun"></div><div class="horizon"></div><div class="card-floating"><div><strong>The Evening Edit</strong><br><span style="color:var(--muted)">Dynamic media-aware interface</span></div><span class="chip">Live</span></div></div>
+        <div class="poster-stage" aria-label="Abstract cinematic poster"><div class="sun"></div><div class="horizon"></div><div class="card-floating"><div><strong>The Evening Edit</strong><br><span style="color:var(--muted)">A cinematic discovery experience</span></div><span class="chip">Live</span></div></div>
       </section>
 
       <section id="collection">
-        <p class="eyebrow">Preview collection</p>
+        <p class="eyebrow">Featured collection</p>
         <div class="grid">
-          <article class="movie" style="--c1:#273d48;--c2:#f78f72"><h3>Atmosphere</h3><p>Poster-led color, soft gradients, and cinematic spacing.</p></article>
-          <article class="movie" style="--c1:#19252a;--c2:#d5ec7f"><h3>Discovery</h3><p>Search, filters, detail pages, and watchlist remain in the Next app.</p></article>
-          <article class="movie" style="--c1:#1e1630;--c2:#4f7cff"><h3>Playback-ready</h3><p>Designed for legal trailers, licensed media, and authorized sources.</p></article>
+          <article class="movie" style="--c1:#273d48;--c2:#f78f72"><h3>Atmosphere</h3><p>Beautifully composed stories with rich moods and unforgettable frames.</p></article>
+          <article class="movie" style="--c1:#19252a;--c2:#d5ec7f"><h3>Discovery</h3><p>Find films by feeling, genre, and the kind of evening you want.</p></article>
+          <article class="movie" style="--c1:#1e1630;--c2:#4f7cff"><h3>Watchlist</h3><p>Save the films that catch your eye and return when the moment is right.</p></article>
         </div>
       </section>
 
-      <section id="status" class="notice">
-        <strong>Status:</strong> Cloudflare Pages was blank because it had no build command and later tried to publish the full <code>.next</code> cache. This static Pages output fixes the visible live page. The full server-rendered build should be deployed through the OpenNext Cloudflare Worker pipeline.
+      <section id="watchlist" class="grid" aria-label="Pinflix highlights">
+        <article class="movie" style="--c1:#162832;--c2:#a57cff"><h3>Trailers</h3><p>Preview stories before choosing your next watch.</p></article>
+        <article class="movie" style="--c1:#2a1c1c;--c2:#ffb36b"><h3>Providers</h3><p>Explore viewing options where available in your region.</p></article>
+        <article class="movie" style="--c1:#10241c;--c2:#76e0b0"><h3>Made for evenings</h3><p>A cleaner way to choose what deserves your time.</p></article>
       </section>
     </main>
 
-    <footer><span>© 2026 Pinflix by Pincode IT</span><span>Pages fallback build · ${new Date().toISOString()}</span></footer>
+    <footer><span>© 2026 Pinflix by Pincode IT</span><span>Find your next great film.</span></footer>
   </div>
 </body>
 </html>`;
@@ -122,8 +123,8 @@ for (const asset of ["cinema-landscape.svg", "icon.svg"]) {
     await access(source, constants.R_OK);
     await copyFile(source, path.join(outDir, asset));
   } catch {
-    // Static fallback remains valid without optional public assets.
+    // Optional public assets are not required for the generated page.
   }
 }
 
-console.log(`Built static Cloudflare Pages fallback in ${outDir}`);
+console.log(`Built production Pinflix page in ${outDir}`);
