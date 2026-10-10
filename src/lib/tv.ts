@@ -100,6 +100,7 @@ function previewDetail(show: TvShow): TvDetail {
 
 function filterDemo(options: CatalogueOptions): TvCatalogueResult {
   const opts = normalizeCatalogueOptions(options);
+  opts.genre = !opts.query && options.genre && TV_GENRES[options.genre] ? options.genre : "";
   let shows = DEMO_TV.filter(show =>
     (!opts.query || show.title.toLowerCase().includes(opts.query.toLowerCase())) &&
     (!opts.genre || show.genres.includes(opts.genre)));
@@ -112,6 +113,7 @@ function filterDemo(options: CatalogueOptions): TvCatalogueResult {
 
 export async function getTvCatalogue(options: CatalogueOptions = {}): Promise<TvCatalogueResult> {
   const opts = normalizeCatalogueOptions(options);
+  opts.genre = !opts.query && options.genre && TV_GENRES[options.genre] ? options.genre : "";
   const env = await getRuntimeEnv();
   if (!env.TMDB_READ_TOKEN && !env.TMDB_API_KEY) return filterDemo(opts);
   try {
