@@ -20,7 +20,7 @@ export default async function MoviePage({ params, searchParams }: Props) {
   if (!initial.movie) notFound();
   return <>
     <MovieDetailView initial={initial} initialRegion={region} />
-    <section className="container" style={{ marginTop: "-48px", marginBottom: "74px" }} aria-label="Playback">
+    <section className="container" style={{ marginTop: "24px", marginBottom: "74px" }} aria-label="Playback">
       <PlaybackPanel movieId={initial.movie.id} title={initial.movie.title} />
     </section>
   </>;
