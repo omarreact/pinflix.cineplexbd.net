@@ -61,3 +61,10 @@
 .episode-playback-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;font-weight:600}
 .episode-playback-heading>span{display:flex;align-items:center;gap:9px}.episode-playback-heading svg{color:var(--media-accent)}
 @media(max-width:680px){.episode-row{flex-wrap:wrap;gap:12px}.episode-summary{flex-basis:calc(100% - 56px)}.episode-watch{margin-left:45px}.episode-playback{padding:12px}}
+
+.episode-manual{border:1px solid var(--media-border);border-radius:12px;padding:20px;background:var(--media-bg-soft)}
+.episode-manual>p{color:var(--muted);font-size:13px;margin-bottom:15px}
+.episode-manual-controls{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.episode-manual-controls label{display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--muted)}
+.episode-manual-controls input{max-width:110px;background:var(--ink);border:1px solid var(--media-border);border-radius:7px;color:var(--cream);padding:10px}
+.episode-manual .episode-playback{margin-top:23px}

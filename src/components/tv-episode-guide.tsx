@@ -17,6 +17,8 @@ export function TvEpisodeGuide({ showId, showTitle, seasons }: {
   const [warning, setWarning] = useState<string | null>(null);
   const [active, setActive] = useState<ActiveEpisode | null>(null);
   const [retry, setRetry] = useState(0);
+  const [manualSeason, setManualSeason] = useState(1);
+  const [manualEpisode, setManualEpisode] = useState(1);
   useEffect(() => {
     if (!playableSeasons.length) return;
     const controller = new AbortController();
@@ -44,7 +46,30 @@ export function TvEpisodeGuide({ showId, showTitle, seasons }: {
   }, [showId, selectedSeason, retry, playableSeasons.length]);
 
   if (!playableSeasons.length) {
-    return <p className="notice">Episodes are not currently listed for this series.</p>;
+    return <div className="episode-manual">
+      <p>Choose a season and episode to check whether video is available.</p>
+      <div className="episode-manual-controls">
+        <label>Season <input type="number" min={1} max={999} step={1}
+          value={manualSeason} onChange={event => setManualSeason(Number(event.target.value))} /></label>
+        <label>Episode <input type="number" min={1} max={999} step={1}
+          value={manualEpisode} onChange={event => setManualEpisode(Number(event.target.value))} /></label>
+        <button type="button" className="button button-primary"
+          disabled={!Number.isInteger(manualSeason) || manualSeason < 1 || manualSeason > 999 ||
+                    !Number.isInteger(manualEpisode) || manualEpisode < 1 || manualEpisode > 999}
+          onClick={() => setActive({ season: manualSeason, number: manualEpisode,
+            title: `Episode ${manualEpisode}` })}><Play size={17} /> Find episode</button>
+      </div>
+      {active ? <div className="episode-playback">
+        <div className="episode-playback-heading"><span>
+          <Clapperboard size={20} /> Season {active.season}, Episode {active.number}</span>
+          <button type="button" className="icon-button" onClick={() => setActive(null)} aria-label="Close episode player">
+            <ChevronDown size={21} /></button>
+        </div>
+        <PlaybackPanel key={`${showId}:${active.season}:${active.number}`}
+          tvId={showId} season={active.season} episode={active.number}
+          title={`${showTitle} · S${active.season}E${active.number}`} autoStart />
+      </div> : null}
+    </div>;
   }
 
   return <div className="episode-guide">

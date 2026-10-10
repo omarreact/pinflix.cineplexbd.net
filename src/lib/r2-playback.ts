@@ -16,10 +16,12 @@ function isEpisodeIndex(input: unknown): input is number {
 
 export function parseR2Selection(value: Record<string, unknown>): R2Selection | null {
   if (value.kind === "tv") {
+    if (value.movieId !== undefined) return null;
     if (!isId(value.tvId) || !isEpisodeIndex(value.season) || !isEpisodeIndex(value.episode)) return null;
     return { kind: "tv", tvId: value.tvId, season: value.season, episode: value.episode };
   }
   if (value.kind === "movie" || value.kind === undefined) {
+    if (value.tvId !== undefined || value.season !== undefined || value.episode !== undefined) return null;
     return isId(value.movieId) ? { kind: "movie", movieId: value.movieId } : null;
   }
   return null;
