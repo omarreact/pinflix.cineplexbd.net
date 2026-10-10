@@ -19,6 +19,7 @@ describe("main PinFlix playback bridge", () => {
     expect(findProviderMatch(movie,[{...found,title:"Dune Part Two"}])).toBeNull();
     expect(findProviderMatch(movie,[{...found,kind:"show"}])).toBeNull();
     expect(normalizeMatchTitle("Dune (2021) 1080P")).toBe("dune");
+    expect(normalizeMatchTitle("Dune 2021")).toBe("dune");
     expect(cleanLookupTitle("Breaking Bad · S2E4","tv")).toBe("Breaking Bad");
   });
   it("rejects untrusted proxy destinations and identifies proxied protocols",()=>{

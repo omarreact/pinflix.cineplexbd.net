@@ -5,6 +5,7 @@ import { isSignedR2Source, parseR2Selection, r2CatalogueKey } from "@/lib/r2-pla
 import { resolveMainPinflix } from "@/lib/main-pinflix";
 
 export const dynamic = "force-dynamic";
+export const preferredRegion = "sin1";
 
 type EdgeResolveResponse = {
   sources?: unknown;

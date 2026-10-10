@@ -32,7 +32,9 @@ export function cleanLookupTitle(title: string, kind: "movie" | "tv"): string {
 export function normalizeMatchTitle(title: string): string {
   return title.normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
     .replace(YEAR_TAG, " ").replace(QUALITY_TAG, " ")
-    .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
+    .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()
+    // Provider titles often append an unbracketed release year.
+    .replace(/\b(?:19|20)\d{2}$/, "").trim().replace(/\s+/g, " ");
 }
 
 /** Exact title and media type. No substring matching that could play
