@@ -1,11 +1,20 @@
-name: Validate Pinflix
+name: Validate Pinflix UI
+
 on:
   push:
+    branches:
+      - main
   pull_request:
+
 permissions:
   contents: read
+
+concurrency:
+  group: pinflix-ui-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  validate:
+  validate-ui:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,8 +23,11 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm cf:typegen
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build:worker
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: TypeScript validation
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test
+      - name: Build Vercel Next.js UI
+        run: pnpm build

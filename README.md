@@ -10,7 +10,7 @@ This repository is built with Next.js 16, React, TypeScript, TMDB, Firebase Auth
 - Show legal metadata and provider links via TMDB/JustWatch where available
 - Default to demo content when no TMDB token is configured
 - Support local browser watchlists and optional authenticated Firestore watchlists
-- Deploy safely on Cloudflare with explicit environment validation
+- Deliver the Next.js UI via Vercel and authorized streaming media via Cloudflare
 - Avoid unauthorized streaming sources or scraping
 
 ## Local development
@@ -107,28 +107,21 @@ Disallowed:
 - bypassing access controls
 - hardcoded public stream URLs without legal authorization
 
-## Cloudflare deployment
+## Deployment architecture
 
-The repository is configured for the OpenNext/Cloudflare Workers path, which is the safest choice for this app’s server-rendered Next.js route structure. Cloudflare Pages deployment should be treated as a static/SSR hosting integration only when the project is explicitly configured for that mode.
+Pinflix uses **Vercel for the production Next.js UI** and a separate **Cloudflare media API + private R2 bucket** for owned or licensed streaming assets. This repository's GitHub Actions UI workflow validates, tests, and builds the Vercel application; the Vercel Git integration handles releases automatically.
 
-### Build commands
+Cloudflare Worker `pinflix-media-api` is separate from the optional OpenNext frontend Worker `pinflix`. The Cloudflare frontend workflow can only be triggered **manually** and is not required for Vercel streaming.
+
+### Validation commands
 
 ```sh
 npm exec --yes pnpm@11.25.0 typecheck
 npm exec --yes pnpm@11.25.0 test
 npm exec --yes pnpm@11.25.0 build
-npm exec --yes pnpm@11.25.0 build:worker
 ```
 
-### Production checklist
-
-- Set production `NEXT_PUBLIC_SITE_URL`
-- Set TMDB token in the hosting environment
-- Add Firebase public config values
-- Confirm Cloudflare bindings for `MOVIE_CACHE` and any R2 resources
-- Test sign-in and Firestore watchlist ownership rules in a staging project
-- Review `firestore.rules` before broad release
-- Verify the deployment app has no secret leaks in public config
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the deployment ownership boundaries and separate media backend procedure.
 
 ## Testing
 
@@ -142,7 +135,7 @@ This project includes tests covering catalogue normalization, demo fallback beha
 
 ## Deployment notes
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for a production-ready Cloudflare deployment checklist and operational notes.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the Vercel-first deployment checklist and the separately managed Cloudflare media infrastructure.
 
 ## Attribution
 

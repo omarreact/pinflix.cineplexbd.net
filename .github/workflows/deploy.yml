@@ -1,28 +1,35 @@
-name: Build and Deploy Pinflix to Cloudflare Workers
+# Optional alternative frontend deployment.
+# This workflow targets the OpenNext Worker named "pinflix" in wrangler.jsonc.
+# It NEVER deploys or modifies the separate "pinflix-media-api" CDN Worker.
+# Normal Pinflix UI releases are handled by the Vercel Git integration.
+name: Deploy Cloudflare Frontend (manual only)
+
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - "src/**"
-      - "public/**"
-      - "scripts/**"
-      - "wrangler.jsonc"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - ".github/workflows/deploy.yml"
+
 permissions:
   contents: read
+
+concurrency:
+  group: pinflix-optional-cloudflare-frontend
+  cancel-in-progress: false
+
 jobs:
-  build-and-deploy:
+  deploy-frontend-worker:
     runs-on: ubuntu-latest
     environment: production
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
-      # The account ID is a public identifier, not an API credential.
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID || '815dd6892edc628128dc65a992086cf9' }}
     steps:
+      - name: Require manual publish credentials
+        shell: bash
+        run: |
+          if [[ -z "$CLOUDFLARE_API_TOKEN" ]]; then
+            echo "::error::Manual Cloudflare frontend publish requires a CLOUDFLARE_API_TOKEN secret. No deployment was attempted."
+            exit 1
+          fi
+          echo "Deploy target: Cloudflare OpenNext frontend Worker 'pinflix' (not pinflix-media-api)." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -33,21 +40,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: node scripts/check-deployment.mjs
-      # Always verify the Cloudflare build, even when publishing isn't configured.
-      - name: Build Worker bundle
+      - name: Build Cloudflare frontend Worker
         run: pnpm build:worker
-      - name: Publish Worker
-        if: ${{ env.CLOUDFLARE_API_TOKEN != '' }}
+      - name: Publish Cloudflare frontend Worker
         run: pnpm exec opennextjs-cloudflare deploy
-      - name: Explain skipped Cloudflare publish
-        if: ${{ env.CLOUDFLARE_API_TOKEN == '' }}
-        run: |
-          echo "::warning title=Cloudflare publish skipped::CLOUDFLARE_API_TOKEN is not configured in GitHub Actions production environment or repository secrets. Build checks passed; no Worker was published."
-          {
-            echo "### Cloudflare publish skipped (credentials required)"
-            echo "Build and tests ran, but **no Cloudflare Worker was deployed**."
-            echo ""
-            echo "Add \`CLOUDFLARE_API_TOKEN\` as a GitHub Actions secret for this repository or its \`production\` environment."
-            echo "Then rerun this workflow. The Cloudflare account ID is already configured via a non-secret fallback."
-            echo "Vercel deployments are separate and are not changed by this workflow."
-          } >> "$GITHUB_STEP_SUMMARY"
