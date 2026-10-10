@@ -1,0 +1,1 @@
+export default function Loading() { return <section className="container page-loading" aria-busy="true" aria-label="Loading page"><div className="loading-state" role="status"><span className="loading-dot" /> Finding the next frame…</div><div className="loading-grid">{Array.from({ length: 4 }, (_, index) => <div className="poster-skeleton" key={index} />)}</div></section>; }
