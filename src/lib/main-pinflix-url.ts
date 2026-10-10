@@ -6,9 +6,9 @@ export const MAIN_PINFLIX_ORIGIN = "https://pinflix.pincodeit.com" as const;
 
 const MEDIA_HOSTS = ["aoneroom.com", "hakunaymatata.com"] as const;
 const ALLOWED_MEDIA_EXTENSIONS = /\.(m3u8|mp4|m4v|m4s|ts|aac)(?:$)/i;
-const MEDIA_ID = /^mb-\d{1,20}~[^\s?#]{1,512}$/;
-const QUALITY_TAG = /\b(?:480p|720p|1080p|2160p|4k|web[- .]?dl|bluray|h264|h265)\b/gi;
-const YEAR_TAG = /[\[(](?:19|20)\d{2}[\])]/g;
+export const MEDIA_ID = /^mb-\d{1,20}~[^\x00-\x1f]{1,1024}$/;
+export const QUALITY_TAG = /\b(?:480p|720p|1080p|2160p|4k|web[- .]?dl|bluray|h264|h265)\b/gi;
+export const YEAR_TAG = /[\[(](?:19|20)\d{2}[\])]/g;
 
 
 function allowedUpstreamMedia(raw: string): boolean {

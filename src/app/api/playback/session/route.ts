@@ -92,7 +92,9 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({
       status: "unavailable",
-      message: "Playback edge is unreachable right now.",
+      message: main.reason === "unmatched"
+        ? "No matching title in main PinFlix; R2 playback is also unreachable."
+        : "The playback sources are temporarily unavailable.",
       key,
       title,
     }, { status: 502 });
@@ -104,7 +106,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({
       status: "unavailable",
-      message: "Playback edge returned an invalid response.",
+      message: "The video playback service returned an invalid response.",
       key,
       title,
     }, { status: 502 });
@@ -127,7 +129,9 @@ export async function POST(request: Request) {
   if (sources.length === 0) {
     return NextResponse.json({
       status: "unavailable",
-      message: "No authorized playback source is cataloged for this title yet.",
+      message: main.reason === "unmatched"
+        ? "This title is not matched to main PinFlix and no R2 video is cataloged."
+        : "No available source found for this video.",
       key,
       title,
       sources: [],

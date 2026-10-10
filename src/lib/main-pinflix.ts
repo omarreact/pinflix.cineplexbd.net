@@ -3,7 +3,7 @@
  * provider catalogue and playback API. No provider credentials or raw
  * upstream URLs are duplicated into this application.
  */
-import { MAIN_PINFLIX_ORIGIN, isMainProxySource } from "@/lib/main-pinflix-url";
+import { MAIN_PINFLIX_ORIGIN, MEDIA_ID, QUALITY_TAG, YEAR_TAG, isMainProxySource } from "@/lib/main-pinflix-url";
 export { MAIN_PINFLIX_ORIGIN, isMainProxySource, mainProxyProtocol } from "@/lib/main-pinflix-url";
 export type ProviderHit = {
   id: string;
@@ -104,7 +104,9 @@ export async function resolveMainPinflix(request: PlaybackRequest, transport: ty
     if (!item || typeof item !== "object") continue;
     const source = item as Record<string, unknown>;
     if (typeof source.url !== "string") continue;
-    const absolute = new URL(source.url, MAIN_PINFLIX_ORIGIN).toString();
+    let absolute: string;
+    try { absolute = new URL(source.url, MAIN_PINFLIX_ORIGIN).toString(); }
+    catch { continue; }
     if (!isMainProxySource(absolute) || unique.has(absolute)) continue;
     // Refuse mismatched IDs even when a malformed response comes from the backend.
     if (new URL(absolute).searchParams.get("id") !== matched.id) continue;
