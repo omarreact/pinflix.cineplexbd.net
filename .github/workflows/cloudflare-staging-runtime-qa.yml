@@ -1,0 +1,102 @@
+name: Cloudflare Staging Runtime QA
+
+on:
+  push:
+    branches:
+      - qa/cloudflare-runtime-20261117
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      BASE_URL: https://pinflix3-stage.farukkhanone.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: HTTP route and API smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in / /about /watchlist /search /tv /api/config "/api/catalog?page=1&sort=popular&region=BD"; do
+            code="$(curl --retry 2 --retry-delay 2 --connect-timeout 10 --max-time 35 -sS -o /tmp/body -w '%{http_code}' "$BASE_URL$path")"
+            echo "$path -> $code"
+            if [ "$code" -lt 200 ] || [ "$code" -ge 400 ]; then
+              echo "Unexpected status for $path" >&2
+              head -c 1200 /tmp/body || true
+              exit 1
+            fi
+          done
+          curl -fsS --connect-timeout 10 --max-time 35 "$BASE_URL/api/catalog?page=1&sort=popular&region=BD" > /tmp/catalog.json
+          node -e 'const fs=require("fs");const x=JSON.parse(fs.readFileSync("/tmp/catalog.json","utf8"));if(!x||typeof x!=="object")process.exit(1);console.log("catalog keys:",Object.keys(x).slice(0,12).join(","));'
+
+      - name: Install browser runner
+        shell: bash
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.56.1
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_BIN"
+          echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
+          "$CHROME_BIN" --version
+
+      - name: Desktop and mobile browser smoke
+        shell: bash
+        run: |
+          cat > /tmp/pinflix3-runtime.mjs <<'EOF'
+          import { chromium } from "@playwright/test";
+
+          const base = process.env.BASE_URL;
+          const browser = await chromium.launch({
+            executablePath: process.env.CHROME_BIN,
+            args: ["--no-sandbox", "--disable-dev-shm-usage"],
+          });
+          const cases = [
+            { name: "desktop", viewport: { width: 1440, height: 900 } },
+            { name: "mobile", viewport: { width: 390, height: 844 } },
+          ];
+          const routePaths = ["/", "/about", "/watchlist", "/search", "/tv"];
+          const failures = [];
+
+          for (const testCase of cases) {
+            const context = await browser.newContext({ viewport: testCase.viewport });
+            const page = await context.newPage();
+            const pageErrors = [];
+            const consoleErrors = [];
+            const failedRequests = [];
+            page.on("pageerror", (error) => pageErrors.push(String(error)));
+            page.on("console", (msg) => {
+              if (msg.type() === "error") consoleErrors.push(msg.text());
+            });
+            page.on("requestfailed", (req) => {
+              const url = req.url();
+              if (url.startsWith(base)) failedRequests.push(url + " :: " + (req.failure()?.errorText || "failed"));
+            });
+
+            for (const path of routePaths) {
+              const response = await page.goto(base + path, { waitUntil: "domcontentloaded", timeout: 45000 });
+              const status = response?.status() ?? 0;
+              console.log(testCase.name, path, status, await page.title());
+              if (status < 200 || status >= 400) failures.push(testCase.name + " " + path + " status " + status);
+              await page.waitForTimeout(1200);
+              if ((await page.locator("body").innerText()).trim().length < 40) failures.push(testCase.name + " " + path + " empty body");
+            }
+
+            for (const error of pageErrors) failures.push(testCase.name + " pageerror " + error);
+            for (const error of consoleErrors) {
+              if (!/favicon|ERR_BLOCKED_BY_CLIENT|Failed to load resource.*404/i.test(error)) failures.push(testCase.name + " console " + error);
+            }
+            for (const error of failedRequests) failures.push(testCase.name + " requestfailed " + error);
+            await context.close();
+          }
+
+          await browser.close();
+          if (failures.length) {
+            console.error(failures.join("\n"));
+            process.exit(1);
+          }
+          EOF
+          NODE_PATH="$PWD/node_modules" node /tmp/pinflix3-runtime.mjs
