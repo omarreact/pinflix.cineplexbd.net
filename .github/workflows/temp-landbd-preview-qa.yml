@@ -1,0 +1,121 @@
+name: Temporary LandBD Cloudflare Preview QA
+
+on:
+  push:
+    branches:
+      - qa/cloudflare-runtime-20261117
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  landbd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BASE_URL: https://fix-cloudflare-landbd-runtime-auth-20261117-landbd-app.farukkhanone.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Public routes and Firebase-backed API smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in / /all-services /dlrms-khatian /survey-khatian /mouza-khatian-book /porcha /geospatial-map /mouza-map /login; do
+            code="$(curl -L --retry 2 --retry-delay 2 --connect-timeout 10 --max-time 40 -sS -o /tmp/body -w '%{http_code}' "$BASE_URL$path")"
+            echo "$path -> $code"
+            if [ "$code" -lt 200 ] || [ "$code" -ge 400 ]; then
+              head -c 1600 /tmp/body || true
+              exit 1
+            fi
+          done
+
+          for path in             "/api/services/access?serviceId=geospatial-map"             /api/public/settings             /api/public/security-settings             /api/payment/pinpay/methods             /api/blogs; do
+            code="$(curl --retry 2 --retry-delay 2 --connect-timeout 10 --max-time 40 -sS -o /tmp/api -w '%{http_code}' "$BASE_URL$path")"
+            echo "$path -> $code"
+            if [ "$code" -lt 200 ] || [ "$code" -ge 400 ]; then
+              head -c 1600 /tmp/api || true
+              exit 1
+            fi
+          done
+
+          admin_code="$(curl -sS -o /tmp/admin -w '%{http_code}' --connect-timeout 10 --max-time 30 "$BASE_URL/admin")"
+          rajuk_code="$(curl -sS -o /tmp/rajuk -w '%{http_code}' --connect-timeout 10 --max-time 30 "$BASE_URL/rajuk-test")"
+          echo "/admin anonymous -> $admin_code"
+          echo "/rajuk-test anonymous -> $rajuk_code"
+          case "$admin_code" in 301|302|303|307|308|401|403) ;; *) echo "Unexpected anonymous admin status"; exit 1;; esac
+          case "$rajuk_code" in 301|302|303|307|308|401|403) ;; *) echo "Unexpected anonymous rajuk-test status"; exit 1;; esac
+
+          notfound="$(curl -sS -o /tmp/notfound -w '%{http_code}' --connect-timeout 10 --max-time 30 "$BASE_URL/__landbd_qa_missing_route__")"
+          echo "404 route -> $notfound"
+          test "$notfound" = "404"
+
+      - name: Install isolated Playwright
+        shell: bash
+        run: |
+          mkdir -p /tmp/landbd-pwqa
+          cd /tmp/landbd-pwqa
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund @playwright/test@1.56.1
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_BIN"
+          echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
+
+      - name: Desktop and mobile UI smoke
+        shell: bash
+        run: |
+          cat > /tmp/landbd-pwqa/runtime.mjs <<'EOF'
+          import { chromium } from "@playwright/test";
+          const base=process.env.BASE_URL;
+          const browser=await chromium.launch({
+            executablePath:process.env.CHROME_BIN,
+            args:["--no-sandbox","--disable-dev-shm-usage","--use-angle=swiftshader","--enable-unsafe-swiftshader","--enable-webgl"],
+          });
+          const failures=[];
+
+          async function inspect(name,viewport,path,check){
+            const context=await browser.newContext({viewport});
+            const page=await context.newPage();
+            const pageErrors=[];
+            const badResponses=[];
+            page.on("pageerror",e=>pageErrors.push(String(e)));
+            page.on("response",r=>{if(r.url().startsWith(base)&&r.status()>=500) badResponses.push(r.status()+" "+r.url());});
+            const response=await page.goto(base+path,{waitUntil:"domcontentloaded",timeout:45000});
+            const status=response?.status()||0;
+            console.log(name,path,status,await page.title());
+            if(status<200||status>=400) failures.push(name+" "+path+" HTTP "+status);
+            await page.waitForTimeout(1500);
+            try{await check(page);}catch(e){failures.push(name+" "+path+" "+String(e));}
+            for(const e of pageErrors) failures.push(name+" pageerror "+e);
+            for(const e of badResponses) failures.push(name+" server-response "+e);
+            await context.close();
+          }
+
+          await inspect("mobile",{width:390,height:844},"/",async page=>{
+            if(!(await page.getByRole("heading",{name:"সকল ভূমি সেবা, এক জায়গায়"}).isVisible())) throw new Error("mobile all-services home missing");
+            if(!(await page.getByRole("link",{name:"LandBD হোম"}).isVisible())) throw new Error("compact header missing");
+          });
+          await inspect("desktop",{width:1440,height:900},"/",async page=>{
+            const nav=page.getByRole("navigation",{name:"প্রধান নেভিগেশন"});
+            if(!(await nav.isVisible())) throw new Error("desktop navigation missing");
+            const button=nav.locator('button[aria-haspopup="menu"]').first();
+            const size=await button.evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+            if(size<18) throw new Error("desktop nav font below 18px: "+size);
+          });
+          await inspect("desktop-map",{width:1440,height:900},"/geospatial-map",async page=>{
+            const map=page.locator('[aria-label="বাংলাদেশের GIS মানচিত্র · আরএস এমএস ও স্যাটেলাইট"]');
+            await map.waitFor({state:"visible",timeout:20000});
+            const sidebar=page.getByRole("navigation",{name:"GIS মানচিত্র সাইডবার"});
+            await sidebar.waitFor({state:"visible",timeout:20000});
+          });
+          await inspect("mobile-khatian",{width:390,height:844},"/dlrms-khatian",async page=>{
+            const body=(await page.locator("body").innerText()).trim();
+            if(body.length<100) throw new Error("DLRMS page body too small");
+          });
+
+          await browser.close();
+          if(failures.length){console.error(failures.join("\n"));process.exit(1);}
+          EOF
+          cd /tmp/landbd-pwqa
+          node runtime.mjs
