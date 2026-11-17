@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  signInWithPopup,
-  signOut,
-  type User,
-} from "firebase/auth";
-import { FirebaseError } from "firebase/app";
+import type { User } from "firebase/auth";
 import {
   createContext,
   useCallback,
@@ -17,16 +10,42 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import {
-  deleteFirebaseWatchlistMovie,
-  isStoredMovie,
-  listFirebaseWatchlist,
-  saveFirebaseWatchlistMovie,
-} from "@/lib/firebase-watchlist";
-import { firebaseConfigured, getFirebaseAuth } from "@/lib/firebase";
 import type { Movie } from "@/lib/types";
 
 const GUEST_STORAGE_KEY = "pinflix:watchlist:v1";
+
+// Firebase is deliberately loaded only in the browser. Keeping the SDK out of the
+// server/Worker module graph avoids protobuf runtime code generation during SSR.
+const firebaseConfigured = true;
+
+async function loadFirebaseClient() {
+  const [{ FirebaseError }, authModule, firebaseModule] = await Promise.all([
+    import("firebase/app"),
+    import("firebase/auth"),
+    import("@/lib/firebase"),
+  ]);
+  return { FirebaseError, ...authModule, ...firebaseModule };
+}
+
+async function loadWatchlistClient() {
+  return import("@/lib/firebase-watchlist");
+}
+
+function isStoredMovieLocal(value: unknown): value is Movie {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const movie = value as Partial<Movie>;
+  return (
+    Number.isSafeInteger(movie.id) &&
+    Number(movie.id) > 0 &&
+    typeof movie.title === "string" &&
+    typeof movie.overview === "string" &&
+    typeof movie.releaseDate === "string" &&
+    typeof movie.rating === "number" &&
+    Number.isFinite(movie.rating) &&
+    Array.isArray(movie.genres)
+  );
+}
+
 type SyncState = "local" | "syncing" | "synced" | "error";
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 type AccountState = {
@@ -77,7 +96,12 @@ function WatchlistProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const unsubscribe = onAuthStateChanged(
+      let unsubscribe: (() => void) | undefined;
+      let disposed = false;
+      loadFirebaseClient()
+        .then(({ FirebaseError, onAuthStateChanged, getFirebaseAuth }) => {
+          if (disposed) return;
+          unsubscribe = onAuthStateChanged(
         getFirebaseAuth(),
         (nextUser) => {
           setUser(nextUser);
@@ -93,10 +117,19 @@ function WatchlistProvider({ children }: { children: ReactNode }) {
           );
           setConfigReady(true);
         },
-      );
-      return unsubscribe;
+          );
+        })
+        .catch(() => {
+          if (disposed) return;
+          setUser(null);
+          setAuthError("Sign-in is temporarily unavailable.");
+          setConfigReady(true);
+        });
+      return () => {
+        disposed = true;
+        unsubscribe?.();
+      };
     } catch {
-      // Authentication must never prevent the public catalogue from rendering.
       setUser(null);
       setAuthError("Sign-in is temporarily unavailable.");
       setConfigReady(true);
@@ -107,7 +140,7 @@ function WatchlistProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(GUEST_STORAGE_KEY);
       const stored: unknown = raw ? JSON.parse(raw) : [];
-      const saved = Array.isArray(stored) ? stored.filter(isStoredMovie).slice(0, 500) : [];
+      const saved = Array.isArray(stored) ? stored.filter(isStoredMovieLocal).slice(0, 500) : [];
       guestRef.current = saved;
       setGuestMovies(saved);
     } catch {
@@ -148,7 +181,8 @@ function WatchlistProvider({ children }: { children: ReactNode }) {
       sync: "syncing",
       pending: [],
     });
-    listFirebaseWatchlist(userId)
+    loadWatchlistClient()
+      .then(({ listFirebaseWatchlist }) => listFirebaseWatchlist(userId))
       .then((movies) => {
         if (!active || ownerRef.current !== userId) return;
         setAccountState({
@@ -175,6 +209,8 @@ function WatchlistProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   const signInWithGoogle = useCallback(async () => {
+    const { GoogleAuthProvider, signInWithPopup, getFirebaseAuth } =
+      await loadFirebaseClient();
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
     await signInWithPopup(getFirebaseAuth(), provider);
@@ -183,6 +219,7 @@ function WatchlistProvider({ children }: { children: ReactNode }) {
   const signOutUser = useCallback(async () => {
     setAuthError(null);
     try {
+      const { signOut, getFirebaseAuth } = await loadFirebaseClient();
       await signOut(getFirebaseAuth());
     } catch {
       setAuthError("Could not sign out. Please try again.");
@@ -242,9 +279,12 @@ function WatchlistProvider({ children }: { children: ReactNode }) {
       setAccountState(nextState);
 
       const requestedOwner = userId;
-      const operation = saved
-        ? deleteFirebaseWatchlistMovie(userId, movie.id)
-        : saveFirebaseWatchlistMovie(userId, movie);
+      const operation = loadWatchlistClient().then(
+        ({ deleteFirebaseWatchlistMovie, saveFirebaseWatchlistMovie }) =>
+          saved
+            ? deleteFirebaseWatchlistMovie(userId, movie.id)
+            : saveFirebaseWatchlistMovie(userId, movie),
+      );
       operation
         .then(() => {
           if (ownerRef.current === requestedOwner) {
