@@ -37,7 +37,10 @@ jobs:
       - name: Install browser runner
         shell: bash
         run: |
-          npm install --no-save --package-lock=false @playwright/test@1.56.1
+          mkdir -p /tmp/pwqa
+          cd /tmp/pwqa
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund @playwright/test@1.56.1
           CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
           test -n "$CHROME_BIN"
           echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
@@ -46,7 +49,7 @@ jobs:
       - name: Desktop and mobile browser smoke
         shell: bash
         run: |
-          cat > /tmp/pinflix3-runtime.mjs <<'EOF'
+          cat > /tmp/pwqa/pinflix3-runtime.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const base = process.env.BASE_URL;
@@ -99,4 +102,5 @@ jobs:
             process.exit(1);
           }
           EOF
-          NODE_PATH="$PWD/node_modules" node /tmp/pinflix3-runtime.mjs
+          cd /tmp/pwqa
+          node pinflix3-runtime.mjs
